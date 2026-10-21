@@ -1,7 +1,7 @@
 # Build diary
 
 Drafts per step, in build order. Rewrite them in your own words, add dates and a screenshot per step
-in `docs/diary/`.
+in `diary/` (not `docs/`: that folder is the deployed build and is cleared on every build).
 
 Each entry: **What** · **Decisions** · **Problems** · **Learned** · **Still open**.
 

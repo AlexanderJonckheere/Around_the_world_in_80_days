@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Around the World in 80 Days</title>
+    <script type="module" crossorigin src="/Around_the_world_in_80_days/assets/index-ClLpet6L.js"></script>
+    <link rel="stylesheet" crossorigin href="/Around_the_world_in_80_days/assets/index-Db9FTTip.css">
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- Darkens the 3D view while a panel is open; clicking it closes the panels -->
+    <div class="backdrop"></div>
+
+    <section class="panel panel--map" aria-label="Map">
+      <header class="panel__header">
+        <h2 class="panel__title">Chart</h2>
+        <span class="panel__hint">Two fingers: swipe to move, pinch to zoom</span>
+        <button class="panel__action panel__action--icon js-zoom-out" aria-label="Zoom out">−</button>
+        <button class="panel__action panel__action--icon js-zoom-in" aria-label="Zoom in">+</button>
+        <button class="panel__action js-reset-view">Reset view</button>
+        <button class="panel__action js-eraser" aria-pressed="false">Eraser</button>
+        <button class="panel__action js-clear-circles">Clear circles</button>
+        <button class="panel__close js-close" aria-label="Close map">×</button>
+      </header>
+      <div class="panel__body"></div>
+    </section>
+
+    <section class="panel panel--rules" aria-label="Rules">
+      <header class="panel__header">
+        <h2 class="panel__title">Rules</h2>
+        <button class="panel__close js-close" aria-label="Close rules">×</button>
+      </header>
+      <div class="panel__body"></div>
+    </section>
+
+    <section class="panel panel--notebook" aria-label="Notebook">
+      <header class="panel__header">
+        <h2 class="panel__title">Notebook</h2>
+        <button class="panel__close js-close" aria-label="Close notebook">×</button>
+      </header>
+      <div class="panel__body"></div>
+    </section>
+
+    <section class="widget widget--barometer widget--left" aria-label="Barometer">
+      <button class="widget__close js-close" aria-label="Close barometer">×</button>
+      <canvas data-size="220"></canvas>
+    </section>
+
+    <section class="widget widget--compass widget--left" aria-label="Compass">
+      <button class="widget__close js-close" aria-label="Close compass">×</button>
+      <canvas data-size="220"></canvas>
+    </section>
+
+    <section class="widget widget--stopwatch widget--right" aria-label="Stopwatch">
+      <button class="widget__close js-close" aria-label="Close stopwatch">×</button>
+      <canvas data-size="200"></canvas>
+      <p class="widget__readout js-readout">00:00.0</p>
+      <div class="widget__buttons">
+        <button class="widget__button js-start">Start</button>
+        <button class="widget__button js-reset">Reset</button>
+      </div>
+    </section>
+
+    <section class="widget widget--speedometer widget--right" aria-label="Speedometer">
+      <button class="widget__close js-close" aria-label="Close speedometer">×</button>
+      <canvas data-size="180"></canvas>
+    </section>
+
+    <!-- Flight messages, warning light and the start screen, above everything else -->
+    <div class="sound-toggles">
+      <button class="sound-toggle js-sound-toggle" data-kind="effects" aria-pressed="true">Sound</button>
+      <button class="sound-toggle js-sound-toggle" data-kind="music" aria-pressed="true">Music</button>
+    </div>
+    <div class="storm-cue" aria-live="polite"><span class="storm-cue__lamp"></span><span class="storm-cue__label">Storm</span></div>
+    <div class="warning" aria-live="polite"><span class="warning__lamp"></span><span class="warning__label">Low</span></div>
+    <div class="toast" role="status"></div>
+    <div class="dialog" role="dialog" aria-modal="true"></div>
+    <div class="start is-open"></div>
+
+    <section class="dev" hidden aria-label="Dev tools"></section>
+    <p class="unsupported" hidden>This game needs a browser with WebGPU support.</p>
+
+  </body>
+</html>
