@@ -1,0 +1,640 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --paper: #efe4c8;
+  --ink: #2b2118;
+  --brass: #b08d57;
+  --leather: #4a2c1a;
+  --wood-dark: rgba(30, 22, 14, 0.88);
+  --gap: 16px;
+  --side-panel-width: 40vw;
+  --slide-time: 0.45s;
+  --slide: var(--slide-time) cubic-bezier(0.2, 0.8, 0.2, 1);
+  --map-height: 92vh;
+  --panel-header-height: 60px;
+  --widget-shift: 0px; /* pushes the top widgets below the map header while the map is open */
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0d0f14;
+  color: var(--paper);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+#app canvas { display: block; }
+
+/* Layers: 3D view < backdrop < panels < widgets (widgets stay usable on top of panels) */
+.backdrop { z-index: 10; }
+.panel { z-index: 20; }
+.widget { z-index: 30; }
+.storm-cue { z-index: 34; }
+.warning { z-index: 35; }
+.toast { z-index: 36; }
+.dev { z-index: 40; }
+.dialog { z-index: 50; }
+.start { z-index: 60; }
+.sound-toggles { z-index: 65; } /* always reachable, even on the start screen */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 4, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--slide);
+}
+
+.has-panel .backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- Panels ---------- */
+
+.panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transition: transform var(--slide), left var(--slide), right var(--slide);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.25);
+}
+
+.panel__title { font-size: 1.2rem; font-weight: normal; font-style: italic; }
+
+.panel__close,
+.widget__close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.panel__body { flex: 1; position: relative; }
+
+/* Map: almost the whole screen, from the bottom */
+.panel--map {
+  left: var(--gap);
+  right: var(--gap);
+  bottom: 0;
+  height: var(--map-height);
+  border-radius: 10px 10px 0 0;
+  transform: translateY(105%);
+}
+
+.panel--map.is-open { transform: translateY(0); }
+
+/* Side by side: the map makes room for the rule pages */
+.has-rules .panel--map { left: calc(var(--side-panel-width) + var(--gap)); }
+
+/* Notebook: 40% of the width, full height, from the right */
+.panel--notebook {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--side-panel-width);
+  border-left: 14px solid var(--leather);
+  transform: translateX(105%);
+}
+
+.panel--notebook.is-open { transform: translateX(0); }
+
+/* ---------- Widgets ---------- */
+
+.widget {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--wood-dark);
+  border: 1px solid var(--brass);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  /* Closed widgets are really hidden (not just slid off-screen), but only after the slide-out,
+     so they can never block clicks on a panel behind them */
+  visibility: hidden;
+  transition: transform var(--slide), left var(--slide), right var(--slide), top var(--slide),
+    visibility 0s linear var(--slide-time);
+}
+
+.widget.is-open {
+  visibility: visible;
+  transition: transform var(--slide), left var(--slide), right var(--slide), top var(--slide), visibility 0s;
+}
+
+.widget__close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 1.2rem;
+}
+
+/* Each widget slides in from the side where its object sits in the cabin */
+.widget--left { left: var(--gap); transform: translateX(calc(-100% - var(--gap) * 2)); }
+.widget--right { right: var(--gap); transform: translateX(calc(100% + var(--gap) * 2)); }
+
+/* With the notebook open, the right-hand instruments move beside it instead of covering it */
+.widget.is-open { transform: translateX(0); }
+
+/* Open widgets make room for the panels (closed ones stay off-screen where they are) */
+.has-notebook .widget--right.is-open { right: calc(var(--side-panel-width) + var(--gap)); }
+.has-rules .widget--left.is-open { left: calc(var(--side-panel-width) + var(--gap)); }
+.has-map { --widget-shift: calc(100vh - var(--map-height) + var(--panel-header-height)); }
+
+.widget--barometer { top: calc(var(--gap) + var(--widget-shift)); }
+.widget--compass { bottom: var(--gap); }
+.widget--stopwatch { top: calc(var(--gap) + var(--widget-shift)); }
+.widget--speedometer { top: calc(var(--gap) * 2 + 310px + var(--widget-shift)); }
+
+.widget__readout {
+  font-family: 'Courier New', monospace;
+  font-size: 1.3rem;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.widget__buttons { display: flex; gap: 8px; }
+
+.widget__button {
+  min-width: 72px;
+  padding: 5px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(#e8c983, #a07a3c);
+  border: 1px solid #6b4f22;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ---------- Dev + fallback ---------- */
+
+.dev {
+  position: fixed;
+  right: var(--gap);
+  bottom: var(--gap);
+  width: 220px;
+  padding: 10px 12px;
+  color: #9f9;
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: 6px;
+  font: 12px/1.4 monospace;
+}
+
+.dev__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+
+.dev__close {
+  padding: 0 4px;
+  font: 16px/1 monospace;
+  color: #cfc;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dev__title { margin-bottom: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+.dev__label { display: block; margin-top: 8px; }
+.dev__buttons { display: grid; gap: 4px; margin-top: 4px; }
+.dev__slider { width: 100%; }
+
+.dev__button {
+  padding: 3px 6px;
+  font: inherit;
+  text-align: left;
+  color: #cfc;
+  background: rgba(120, 255, 120, 0.12);
+  border: 1px solid rgba(120, 255, 120, 0.4);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.unsupported {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--gap);
+  text-align: center;
+}
+
+.unsupported[hidden],
+.dev[hidden] { display: none; }
+
+/* Rules: the rule sheets from the table, from the left */
+.panel--rules {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--side-panel-width);
+  transform: translateX(-105%);
+}
+
+.panel--rules.is-open { transform: translateX(0); }
+
+/* ---------- Rules page ---------- */
+
+.panel--rules .panel__body {
+  overflow-y: auto;
+  padding: 20px 28px 32px;
+}
+
+.rules__heading {
+  margin-bottom: 18px;
+  font-size: 1.4rem;
+  font-weight: normal;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+
+.rule { margin-bottom: 20px; }
+
+.rule__title {
+  margin-bottom: 4px;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.3);
+}
+
+.rule__formula {
+  margin: 8px 0;
+  font-size: 1.15rem;
+  font-style: italic;
+}
+
+.rule__text { font-size: 0.95rem; line-height: 1.5; }
+
+.rule__table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.rule__table th,
+.rule__table td {
+  padding: 3px 6px;
+  text-align: left;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.2);
+}
+
+/* Stacked fraction for formulas */
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 0.85em;
+}
+
+.frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 3px; }
+
+/* ---------- Notebook calculations ---------- */
+
+.panel--notebook .panel__body {
+  overflow-y: auto;
+  padding: 20px 28px 32px;
+  /* Faint ruled lines, like a real notebook page */
+  background: repeating-linear-gradient(transparent 0 27px, rgba(70, 90, 140, 0.15) 27px 28px);
+}
+
+.calc__fill {
+  margin: 6px 0;
+  font-size: 1.05rem;
+  line-height: 2;
+}
+
+/* A blank to write in: just an underline, like on paper */
+.calc__blank {
+  padding: 0 4px;
+  font: inherit;
+  font-style: italic;
+  text-align: center;
+  color: #1d3a8a; /* pencil-blue, so filled-in numbers stand out from the print */
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.calc__blank::placeholder { color: rgba(43, 33, 24, 0.4); }
+
+.calc__blank:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom-color: #1d3a8a;
+}
+
+.calc__result {
+  font-weight: bold;
+  color: #1d3a8a;
+}
+
+/* ---------- Map ---------- */
+
+.panel--map .panel__body { overflow: hidden; }
+
+.map__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none; /* pointer events drive the dividers, also on touch screens */
+}
+
+.panel__action {
+  margin-right: 12px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: none;
+  border: 1px solid rgba(43, 33, 24, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.panel__title { margin-right: auto; }
+
+.panel__hint {
+  margin-right: 16px;
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.panel__action--icon {
+  min-width: 34px;
+  padding: 2px 8px;
+  font-size: 1.1rem;
+}
+
+.panel__action:hover { background: rgba(43, 33, 24, 0.08); }
+
+/* A tool that is switched on, e.g. the map eraser */
+.panel__action.is-active {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.map__canvas.is-erasing { cursor: not-allowed; }
+
+
+/* ---------- Warning light ---------- */
+
+.warning {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  /* red glow at the screen edges, stronger the closer to the clouds */
+  box-shadow: inset 0 0 calc(40px + 120px * var(--warning, 0)) rgba(220, 30, 20, calc(0.25 + 0.45 * var(--warning, 0)));
+}
+
+.warning.is-on {
+  opacity: 1;
+  animation: warning-pulse var(--pulse, 1s) ease-in-out infinite;
+}
+
+.warning__lamp {
+  position: absolute;
+  top: var(--gap);
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff9a8a, #e02010 55%, #6a0a05);
+  box-shadow: 0 0 18px 6px rgba(255, 40, 20, 0.7);
+}
+
+.warning__label {
+  position: absolute;
+  top: calc(var(--gap) + 32px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffb0a0;
+  text-shadow: 0 0 6px #000;
+}
+
+@keyframes warning-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---------- Toast (landmark passed) ---------- */
+
+.toast {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 22px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid #4a7a3a;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -20px);
+  transition: opacity var(--slide), transform var(--slide);
+}
+
+.toast.is-open { opacity: 1; transform: translate(-50%, 0); }
+.toast__title { font-size: 1.15rem; color: #2f5a24; }
+
+/* ---------- Dialog (missed, crashed, complete) ---------- */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--gap);
+  background: rgba(8, 6, 4, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--slide), visibility 0s linear var(--slide-time);
+}
+
+.dialog.is-open { opacity: 1; visibility: visible; transition: opacity var(--slide), visibility 0s; }
+
+.dialog__card {
+  max-width: 460px;
+  padding: 26px 30px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border-top: 8px solid var(--tone);
+  border-radius: 10px;
+  box-shadow: 0 12px 50px rgba(0, 0, 0, 0.55);
+}
+
+.dialog__card--good { --tone: #4a7a3a; }
+.dialog__card--bad { --tone: #a2281a; }
+.dialog__title { margin-bottom: 10px; font-size: 1.5rem; font-weight: normal; }
+.dialog__text { margin-bottom: 20px; line-height: 1.5; }
+.dialog__buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.dialog__button {
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(#e8c983, #a07a3c);
+  border: 1px solid #6b4f22;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dialog__button { padding: 8px 18px; }
+
+/* ---------- Start screen ---------- */
+
+.start {
+  position: fixed;
+  inset: 0;
+  display: flex; /* with margin: auto on the card: centred, but scrollable from the top on short windows */
+  overflow-y: auto;
+  padding: var(--gap);
+  background: radial-gradient(ellipse at 50% 30%, rgba(40, 60, 80, 0.75), rgba(8, 6, 4, 0.92));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--slide), visibility 0s linear var(--slide-time);
+}
+
+.start.is-open { opacity: 1; visibility: visible; transition: opacity var(--slide), visibility 0s; }
+
+.start__card {
+  width: min(760px, 100%);
+  margin: auto;
+  padding: 30px 40px;
+  color: var(--ink);
+  background: var(--paper);
+  border-radius: 12px;
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.6);
+}
+
+.start__title { font-size: 2.1rem; font-weight: normal; font-variant: small-caps; text-align: center; }
+.start__subtitle { margin-bottom: 12px; font-style: italic; text-align: center; opacity: 0.7; }
+.start__section { margin-top: 16px; }
+
+.start__section h2 {
+  margin-bottom: 6px;
+  font-size: 1.05rem;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.3);
+}
+
+.start__section p,
+.start__list { font-size: 0.95rem; line-height: 1.5; }
+.start__list { margin: 8px 0 0 20px; }
+.start__controls { width: 100%; font-size: 0.9rem; border-collapse: collapse; }
+.start__controls td { padding: 3px 6px; border-bottom: 1px solid rgba(43, 33, 24, 0.15); }
+.start__controls td:first-child { font-weight: bold; width: 40%; }
+
+.start__actions { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+
+.start__play {
+  flex: 1;
+  padding: 14px;
+  font: inherit;
+  font-size: 1.3rem;
+  color: var(--ink);
+  background: linear-gradient(#e8c983, #a07a3c);
+  border: 1px solid #6b4f22;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.start__play:hover { filter: brightness(1.08); }
+
+.start__dev {
+  padding: 8px 12px;
+  font: 12px monospace;
+  color: #2f5a24;
+  background: none;
+  border: 1px dashed rgba(47, 90, 36, 0.6);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+/* ---------- Storm cue ---------- */
+
+.storm-cue {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.storm-cue.is-on { opacity: 1; }
+
+.storm-cue__lamp {
+  position: absolute;
+  top: var(--gap);
+  left: calc(50% + 70px);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c9d4ff, #4a5fd0 55%, #1a2160);
+  box-shadow: 0 0 calc(8px + 14px * var(--storm, 0)) 4px rgba(90, 120, 255, 0.75);
+  animation: warning-pulse 0.9s ease-in-out infinite;
+}
+
+.storm-cue__label {
+  position: absolute;
+  top: calc(var(--gap) + 32px);
+  left: calc(50% + 83px);
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c9d4ff;
+  text-shadow: 0 0 6px #000;
+}
+
+
+/* ---------- Sound toggles ---------- */
+
+.sound-toggles {
+  position: fixed;
+  top: var(--gap);
+  left: calc(50% - 250px);
+  display: flex;
+  gap: 6px;
+}
+
+.sound-toggle {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--paper);
+  background: var(--wood-dark);
+  border: 1px solid var(--brass);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Off: struck through and dimmed */
+.sound-toggle.is-off { opacity: 0.5; text-decoration: line-through; }
